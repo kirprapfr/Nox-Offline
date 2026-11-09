@@ -1,0 +1,9 @@
+/backend/target/
+/backend/games.json
+/backend/gamefiles/
+/backend/gameimages/
+/frontend/assets/
+/frontend/mediaimages/
+/frontend/js/htmx.min.js
+/node_modules/
+/package-lock.json

@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Nox Video Player</title>
+        <style>
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+                font-family: 'Segoe UI', system-ui, sans-serif;
+            }
+            body {
+                background: #0c101a;
+                color: #f1f5f9;
+                display: flex;
+                flex-direction: column;
+                height: 100vh;
+                padding: 16px;
+                gap: 14px;
+            }
+            .toolbar {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                background: linear-gradient(90deg, #13192b, #181f33);
+                padding: 12px 16px;
+                border: 1px solid rgba(148, 163, 184, 0.14);
+                border-radius: 12px;
+                align-items: center;
+            }
+            input[type='text'] {
+                flex: 1;
+                min-width: 240px;
+                padding: 9px 12px;
+                background: #0c101a;
+                border: 1px solid rgba(148, 163, 184, 0.2);
+                color: #f1f5f9;
+                border-radius: 10px;
+                font-size: 13px;
+            }
+            input[type='text']:focus {
+                outline: none;
+                border-color: #8b5cf6;
+                box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18);
+            }
+            button,
+            .file-label {
+                background: #1e263d;
+                color: #f1f5f9;
+                border: 1px solid rgba(148, 163, 184, 0.2);
+                padding: 9px 15px;
+                border-radius: 10px;
+                cursor: pointer;
+                font-size: 13px;
+                font-weight: 600;
+                transition: all 0.15s ease;
+            }
+            button:hover,
+            .file-label:hover {
+                border-color: #8b5cf6;
+                background: linear-gradient(135deg, #7c3aed, #4f46e5);
+                color: #fff;
+            }
+            input[type='file'] {
+                display: none;
+            }
+            .stage {
+                flex: 1;
+                background: #080b12;
+                border: 1px solid rgba(139, 92, 246, 0.28);
+                border-radius: 16px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                overflow: hidden;
+            }
+            video,
+            iframe {
+                width: 100%;
+                height: 100%;
+                border: none;
+                display: none;
+            }
+            .placeholder {
+                color: #94a3b8;
+                font-size: 14px;
+                text-align: center;
+                padding: 24px 32px;
+                line-height: 1.7;
+                background: #13192b;
+                border-radius: 14px;
+                border: 1px solid rgba(148, 163, 184, 0.14);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="toolbar">
+            <input
+                type="text"
+                id="ytInput"
+                placeholder="Paste YouTube Video URL, Playlist URL, or Video ID..."
+                onkeydown="if (event.key === 'Enter') loadYouTube();"
+            />
+            <button onclick="loadYouTube()">Play Stream</button>
+            <label class="file-label">
+                Open Local Video
+                <input type="file" id="localVideoInput" accept="video/*" />
+            </label>
+        </div>
+
+        <div class="stage">
+            <div id="placeholder" class="placeholder">
+                Paste an official YouTube link above or click <strong>Open Local Video</strong> to play a file (.mp4,
+                .webm).
+            </div>
+            <video id="localPlayer" controls></video>
+            <iframe id="ytPlayer" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+        </div>
+
+        <script>
+            const placeholder = document.getElementById('placeholder');
+            const localPlayer = document.getElementById('localPlayer');
+            const ytPlayer = document.getElementById('ytPlayer');
+
+            function buildEmbedUrl(input) {
+                const clean = input.trim();
+                if (!clean) return null;
+                const listMatch = clean.match(/[?&]list=([a-zA-Z0-9_-]+)/);
+                const vidMatch = clean.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([a-zA-Z0-9_-]{11})/);
+
+                if (vidMatch && listMatch) return `https://youtube-nocookie.com{vidMatch}?list=${listMatch}&autoplay=1`;
+                if (listMatch) return `https://youtube-nocookie.com{listMatch}&autoplay=1`;
+                if (vidMatch) return `https://youtube-nocookie.com{vidMatch}?autoplay=1`;
+                if (/^[a-zA-Z0-9_-]{11}$/.test(clean)) return `https://youtube-nocookie.com{clean}?autoplay=1`;
+                return null;
+            }
+
+            function loadYouTube() {
+                const embedUrl = buildEmbedUrl(document.getElementById('ytInput').value);
+                if (!embedUrl) return;
+                localPlayer.pause();
+                localPlayer.style.display = 'none';
+                placeholder.style.display = 'none';
+                ytPlayer.src = embedUrl;
+                ytPlayer.style.display = 'block';
+            }
+
+            document.getElementById('localVideoInput').addEventListener('change', function (e) {
+                const file = e.target.files;
+                if (!file) return;
+                ytPlayer.src = '';
+                ytPlayer.style.display = 'none';
+                placeholder.style.display = 'none';
+                localPlayer.src = URL.createObjectURL(file);
+                localPlayer.style.display = 'block';
+                localPlayer.play();
+            });
+        </script>
+    </body>
+</html>

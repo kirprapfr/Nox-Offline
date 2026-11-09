@@ -1,0 +1,5 @@
+/backend/target/
+/backend/nox.db
+/backend/nox.db-shm
+/backend/nox.db-wal
+/node_modules/

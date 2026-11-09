@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Nox</title>
+        <meta name="htmx-config" content='{"selfRequestsOnly":false}' />
+        <link rel="stylesheet" href="./css/style.css" />
+    </head>
+    <body>
+        <div class="identity-overlay" id="identity-modal" hidden>
+            <div class="identity-card" role="dialog" aria-modal="true" aria-labelledby="identity-title">
+                <div class="identity-badge">NX</div>
+                <h2 id="identity-title">Join Nox</h2>
+                <p class="identity-copy">
+                    Choose a display name. Nox is whitelist-only, so an admin needs to approve the user ID created for
+                    this browser.
+                </p>
+                <form id="identity-form" class="identity-form" autocomplete="off">
+                    <label for="identity-username">Username</label>
+                    <input
+                        id="identity-username"
+                        name="username"
+                        type="text"
+                        maxlength="32"
+                        placeholder="e.g. player-one"
+                        autocomplete="off"
+                        required
+                    />
+                    <p class="identity-error" id="identity-error" role="alert"></p>
+                    <button type="submit" class="identity-submit">Request access</button>
+                </form>
+                <p class="identity-hint">
+                    Your user ID is generated and stored in this browser. No account or password is needed.
+                </p>
+            </div>
+        </div>
+
+        <div id="inline-stream-layer" class="fullscreen-player-layer" style="display: none">
+            <div class="player-control-header">
+                <button class="close-stream-btn" onclick="closeStreamPortal()">← Back</button>
+                <span id="active-stream-title"></span>
+                <div style="margin-left: auto; display: flex; gap: 8px">
+                    <button class="close-stream-btn" onclick="reloadStreamPortal()">↻ Reload</button>
+                    <button class="close-stream-btn" onclick="togglePlayerFullscreen()">⛶ Fullscreen</button>
+                </div>
+            </div>
+            <div class="stream-frame-container">
+                <iframe
+                    id="nox-secure-iframe"
+                    src=""
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-popups allow-modals"
+                    allowfullscreen
+                ></iframe>
+            </div>
+        </div>
+
+        <div class="app-shell">
+            <aside class="left-sidebar">
+                <div class="brand" onclick="switchTab('home-section', document.getElementById('nav-home'))">
+                    <span class="brand-icon">N</span> NOX
+                </div>
+
+                <nav class="side-nav">
+                    <button id="nav-home" class="nav-tab-btn active" onclick="switchTab('home-section', this)">
+                        Home
+                    </button>
+                    <button id="nav-games" class="nav-tab-btn" onclick="switchTab('games-section', this)">
+                        Library <span class="nav-badge" id="total-games-badge">800+</span>
+                    </button>
+                    <button id="nav-anime" class="nav-tab-btn" onclick="switchTab('anime-section', this)">Anime</button>
+                    <button id="nav-manga" class="nav-tab-btn" onclick="switchTab('manga-section', this)">Manga</button>
+                    <button id="nav-video" class="nav-tab-btn" onclick="switchTab('video-section', this)">
+                        Videos
+                    </button>
+                    <button class="nav-tab-btn" onclick="launchRandomGame()">Random</button>
+                </nav>
+
+                <div class="sidebar-promo-card">
+                    <div class="promo-title">Full Collection</div>
+                    <p>Browse all titles and manage your saved favorites.</p>
+                    <button
+                        class="promo-btn"
+                        onclick="switchTab('games-section', document.getElementById('nav-games'))"
+                    >
+                        Go to library
+                    </button>
+                </div>
+            </aside>
+
+            <main class="main-stage">
+                <header class="top-search-bar">
+                    <input
+                        type="text"
+                        id="global-search"
+                        placeholder="Search..."
+                        onkeyup="handleGlobalSearch(this.value)"
+                        class="search-input"
+                    />
+                    <button class="pill-btn" id="fav-filter-btn" onclick="toggleFavoritesFilter()">★ Favorites</button>
+                </header>
+
+                <div id="home-section" class="tab-content">
+                    <div class="hero-carousel-wrapper">
+                        <div class="hero-banner" id="hero-banner">
+                            <button class="hero-arrow prev" onclick="cycleHero(-1)">‹</button>
+                            <button class="hero-arrow next" onclick="cycleHero(1)">›</button>
+
+                            <div class="hero-tags" id="hero-tags"></div>
+                            <h1 class="hero-title" id="hero-title">Hollow Knight</h1>
+                            <p class="hero-desc" id="hero-desc"></p>
+                            <div class="hero-meta" id="hero-meta"></div>
+
+                            <div class="hero-actions">
+                                <button class="hero-play-btn" id="hero-play-btn">Play Now</button>
+                                <button
+                                    class="hero-secondary-btn"
+                                    onclick="switchTab('games-section', document.getElementById('nav-games'))"
+                                >
+                                    + Library
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="hero-selector-row" id="hero-selector-row"></div>
+                    </div>
+
+                    <div class="home-bottom-split">
+                        <div class="featured-column">
+                            <div class="section-header">
+                                <h2><span class="accent-bar"></span>Trending Now</h2>
+                                <button
+                                    class="text-link-btn"
+                                    onclick="switchTab('games-section', document.getElementById('nav-games'))"
+                                >
+                                    View all →
+                                </button>
+                            </div>
+                            <div class="featured-cards-row" id="featured-games-row"></div>
+                        </div>
+
+                        <div class="recent-column">
+                            <div class="section-header">
+                                <h2><span class="accent-bar"></span>Recently Played</h2>
+                            </div>
+                            <div class="recent-list" id="recent-games-list">
+                                <div class="empty-note">Nothing played yet.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="games-section" class="tab-content" style="display: none">
+                    <div class="subpage-banner">
+                        <div>
+                            <div class="subpage-kicker">COLLECTION</div>
+                            <h2 class="subpage-title">Games Library</h2>
+                            <p class="subpage-sub" id="library-count-text">Loading full catalog...</p>
+                        </div>
+                        <div class="subpage-controls">
+                            <button class="pill-btn active" id="lib-all-btn" onclick="setFavoritesMode(false)">
+                                All Games
+                            </button>
+                            <button class="pill-btn" id="lib-fav-btn" onclick="setFavoritesMode(true)">
+                                ★ Saved Favorites
+                            </button>
+                            <button class="pill-btn" onclick="launchRandomGame()">🎲 Surprise Me</button>
+                        </div>
+                    </div>
+                    <div class="media-grid" id="games-grid" data-games-grid>
+                        <div class="empty-note">Checking whitelist...</div>
+                    </div>
+                </div>
+
+                <div id="anime-section" class="tab-content" style="display: none">
+                    <div class="subpage-banner">
+                        <div>
+                            <div class="subpage-kicker">STREAMING HUB</div>
+                            <h2 class="subpage-title">Anime Portals</h2>
+                            <p class="subpage-sub">Select a source below to launch directly inside the player.</p>
+                        </div>
+                    </div>
+                    <div class="portal-grid"></div>
+
+                    <div class="section-header" style="margin-top: 26px">
+                        <h2><span class="accent-bar"></span>Top Rated Anime</h2>
+                    </div>
+                    <div class="media-poster-row" id="anime-spotlight-grid"></div>
+                </div>
+
+                <div id="manga-section" class="tab-content" style="display: none">
+                    <div class="subpage-banner">
+                        <div>
+                            <div class="subpage-kicker">READING VAULT</div>
+                            <h2 class="subpage-title">Manga & Comics</h2>
+                            <p class="subpage-sub">Select a reader portal below to open in this tab.</p>
+                        </div>
+                    </div>
+                    <div class="portal-grid"></div>
+
+                    <div class="section-header" style="margin-top: 26px">
+                        <h2><span class="accent-bar"></span>Top Rated Manga</h2>
+                    </div>
+                    <div class="media-poster-row" id="manga-spotlight-grid"></div>
+                </div>
+
+                <div id="video-section" class="tab-content" style="display: none">
+                    <div class="subpage-banner">
+                        <div>
+                            <div class="subpage-kicker">MEDIA STREAM</div>
+                            <h2 class="subpage-title">Videos & Embeds</h2>
+                            <p class="subpage-sub">Launch the built-in video player or stream channels below.</p>
+                        </div>
+                    </div>
+                    <div class="portal-grid"></div>
+                </div>
+            </main>
+
+            <aside class="right-sidebar">
+                <div class="profile-pill">
+                    <div class="avatar-circle" id="profile-avatar">NX</div>
+                    <div>
+                        <div class="profile-name" id="profile-name">Player 1</div>
+                        <div class="profile-sub" id="profile-sub">Checking access</div>
+                    </div>
+                </div>
+
+                <div class="widget-title">Quick Launch</div>
+                <div class="quick-launch-list" id="quick-launch-list"></div>
+
+                <div class="sidebar-divider"></div>
+
+                <div class="widget-title">Spotify Player</div>
+                <div class="spotify-box">
+                    <div class="spotify-input-row">
+                        <input
+                            type="text"
+                            id="spotify-url-input"
+                            placeholder="Paste Spotify link..."
+                            onkeydown="if (event.key === 'Enter') loadSpotifyEmbed();"
+                        />
+                        <button onclick="loadSpotifyEmbed()">Load</button>
+                    </div>
+                    <iframe
+                        id="spotify-embed-frame"
+                        style="border-radius: 12px"
+                        src="about:blank"
+                        width="100%"
+                        height="152"
+                        frameborder="0"
+                        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                        loading="lazy"
+                    >
+                    </iframe>
+                </div>
+
+                <div class="sidebar-divider"></div>
+
+                <div class="top-media-header">
+                    <div class="widget-title">Top Charts</div>
+                    <div class="mini-toggle-group">
+                        <button class="mini-toggle-btn active" id="top-anime-btn" onclick="switchTopMedia('anime')">
+                            Anime
+                        </button>
+                        <button class="mini-toggle-btn" id="top-manga-btn" onclick="switchTopMedia('manga')">
+                            Manga
+                        </button>
+                    </div>
+                </div>
+                <div class="top-media-list" id="top-media-list">
+                    <div class="empty-note">Loading rankings...</div>
+                </div>
+            </aside>
+        </div>
+
+        <script src="./js/config.js"></script>
+        <script src="./js/htmx.min.js"></script>
+        <script src="./js/favorites.js"></script>
+        <script src="./js/streams-data.js"></script>
+        <script src="./js/app.js"></script>
+    </body>
+</html>

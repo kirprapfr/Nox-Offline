@@ -1,0 +1,13 @@
+{
+  "name": "nox-offline",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Nox offline game library frontend and backend",
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.9.10"
+  }
+}
